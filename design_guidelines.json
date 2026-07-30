@@ -1,0 +1,164 @@
+{
+  "app_name": "Tyre Express",
+  "personality": "7 Dark-First Utility DARK",
+  "personality_one_liner": "A high-contrast, rugged command center built for emergency scanning, rapid action, and live tracking on the road.",
+  "color": {
+    "surface": "#111315",
+    "onSurface": "#F2F4F7",
+    "surfaceSecondary": "#1C1F22",
+    "onSurfaceSecondary": "#A1A7AF",
+    "surfaceTertiary": "#272A2E",
+    "onSurfaceTertiary": "#FFFFFF",
+    "surfaceInverse": "#FFD600",
+    "onSurfaceInverse": "#111315",
+    "brand": "#FFD600",
+    "brandPrimary": "#FFD600",
+    "onBrandPrimary": "#111315",
+    "brandSecondary": "#E5C000",
+    "onBrandSecondary": "#111315",
+    "brandTertiary": "#332A00",
+    "onBrandTertiary": "#FFD600",
+    "success": "#00E676",
+    "onSuccess": "#000000",
+    "warning": "#FFB700",
+    "onWarning": "#000000",
+    "error": "#FF3B30",
+    "onError": "#FFFFFF",
+    "info": "#A1A7AF",
+    "onInfo": "#111315",
+    "border": "#272A2E",
+    "borderStrong": "#3A3F45",
+    "divider": "#1C1F22"
+  },
+  "typography": {
+    "displayFontFamily": "Barlow Condensed",
+    "textFontFamily": "Chivo",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Dense but scannable hierarchy. Generous padding around the primary emergency CTA, tighter spacing in data-heavy service dashboards.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": "false",
+    "do's": [
+      "Use solid dark surfaces (surfaceSecondary) for bottom sheets and cards to maintain high readability."
+    ],
+    "dont's": [
+      "Avoid glassmorphism on map bottom sheets or emergency CTAs; clarity and contrast beat aesthetics here."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-blur",
+      "android": "solid surfaceSecondary",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home (Map & Request)",
+      "purpose": "A map-first experience allowing stranded users to request help in maximum 2 taps.",
+      "states": {
+        "loading": "Full-screen dark asphalt texture with a pulsing yellow loader.",
+        "empty": "Map view with a bottom sheet showing 'Select Issue'.",
+        "error": "Bottom sheet displays red error banner: 'Unable to locate mechanics. Retry?'"
+      },
+      "layout": "Full-screen map map view using a dark map style. A persistent @gorhom/bottom-sheet at the bottom. The sheet contains horizontally scrollable issue chips (Puncture, Engine, Battery, Fuel). Below the chips is a massive, full-width brandPrimary CTA reading 'REQUEST HELP NOW' (min 56pt height). An SOS FAB floats above the bottom sheet on the right side."
+    },
+    {
+      "name": "Live Tracking",
+      "purpose": "Shows the mechanic's ETA and location on the map, providing a sense of safety.",
+      "states": {
+        "loading": "Skeleton of mechanic details and route.",
+        "empty": "N/A - screen only accessed when tracking.",
+        "error": "Offline Mode banner: 'Network low. Tracking via SMS updates.'"
+      },
+      "layout": "Map with a route polyline. Bottom sheet expanded to show Mechanic profile (real photo), ETA in large Barlow Condensed text, vehicle details, and two large buttons: 'Call' and 'Message'."
+    },
+    {
+      "name": "Provider Dashboard",
+      "purpose": "Command center for mechanics to accept/reject incoming emergency requests and view earnings.",
+      "states": {
+        "loading": "Spinning loader over the stats grid.",
+        "empty": "Illustration of a mechanic tools with 'No active requests right now. You are online.'",
+        "error": "Banner: 'Connection lost. Reconnecting...'"
+      },
+      "layout": "Top header with an 'Online/Offline' toggle. A 2-column grid showing 'Today's Earnings' and 'Requests'. Below that, a list of incoming or active requests on surfaceSecondary cards with clear 'Accept' (brandPrimary) and 'Decline' (surfaceTertiary) buttons."
+    },
+    {
+      "name": "AI Issue Detection",
+      "purpose": "Allows users to take a photo of their breakdown for AI-based issue categorization.",
+      "states": {
+        "loading": "Analyzing photo with a scanning line animation over the image.",
+        "empty": "Camera viewfinder with 'Take a photo of the problem'.",
+        "error": "Error modal: 'Could not identify issue. Please select manually.'"
+      },
+      "layout": "Camera view or photo preview covering the top 60% of the screen. Bottom 40% surfaceSecondary container with detected issue results as selectable chips and a 'Confirm & Request' sticky CTA."
+    }
+  ],
+  "images": {
+    "hero_asphalt_bg": {
+      "url": "https://images.unsplash.com/photo-1635789146064-ffa7966c32e3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxkYXJrJTIwYXNwaGFsdCUyMHJvYWQlMjB0ZXh0dXJlJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODUzNzU0OTF8MA&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1635789146064-ffa7966c32e3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxkYXJrJTIwYXNwaGFsdCUyMHJvYWQlMjB0ZXh0dXJlJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODUzNzU0OTF8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark asphalt road texture background"
+    },
+    "category_engine": {
+      "url": "https://images.unsplash.com/photo-1615906655593-ad0386982a0f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODR8MHwxfHNlYXJjaHwxfHxjYXIlMjBlbmdpbmUlMjByZXBhaXJ8ZW58MHx8fHwxNzg1Mzc1NTAzfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Mechanic working on car engine"
+    },
+    "category_puncture": {
+      "url": "https://images.unsplash.com/photo-1596383765797-8e10e88d1590?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxmbGF0JTIwdGlyZXxlbnwwfHx8fDE3ODUzNzU1MDN8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Car with a flat tire"
+    },
+    "category_tow": {
+      "url": "https://images.unsplash.com/photo-1686966933735-305bd8fe0a77?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwxfHx0b3clMjB0cnVja3xlbnwwfHx8fDE3ODUzNzU1MDN8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Car being loaded onto a tow truck"
+    }
+  },
+  "haptics": {
+    "events": {
+      "primary_cta_press": "heavy",
+      "issue_chip_select": "light",
+      "sos_button_press": "heavy_double",
+      "mechanic_accept_request": "medium",
+      "bottom_sheet_snap": "light"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the Dark-First Utility DARK personality. This is a rugged, emergency-focused app, not a luxury or playful one. Avoid rounded, soft, or playful components.",
+    "Implement the map as the full-screen root component on the Home screen. All interactions (issue selection, requesting help) must happen via the `@gorhom/bottom-sheet`.",
+    "The primary CTA ('REQUEST HELP NOW') must be massive (min 56pt height), use `brandPrimary` (#FFD600), and feature bold `Barlow Condensed` typography.",
+    "Ensure contrast is ultra-high. Use `surfaceSecondary` (#1C1F22) for cards and sheets to stand out from the `surface` (#111315) background without relying on glassmorphism or shadows.",
+    "For the Service Provider Dashboard, emphasize glanceability with oversized metrics and segmented controls. The design should look like a command center.",
+    "Use Phosphor icons in filled/bold weights to maintain the rugged aesthetic.",
+    "Banned hues: NO blue, purple, indigo, or orange. Stick strictly to the asphalt, safety yellow, and red palette defined.",
+    "All cards containing images must use the gradient-to-dark scrim pattern to guarantee text readability."
+  ]
+}
