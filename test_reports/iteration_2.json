@@ -1,0 +1,46 @@
+{
+  "summary": "Frontend-only regression test for the AI Detect close (X) bug. BUG NOT FIXED. Verified via mobile viewport (390x844) on the public preview URL: after registering a fresh Driver and opening AI Detect from the bottom tab, tapping the X (testID='back-ai') does NOT return the user to the Home tab — the URL stays at /ai-detect and the AI Issue Detection screen remains rendered. Root cause: /app/frontend/app/(tabs)/ai.tsx uses useFocusEffect(() => router.push('/ai-detect')). When close is tapped on ai-detect, router.back() pops back to (tabs)/ai, but the AiTab immediately regains focus, useFocusEffect fires, and it pushes /ai-detect again — creating an inescapable bounce. The hardening added to ai-detect.tsx (canGoBack fallback) does not help because canGoBack() returns true (there IS a history entry: /ai), so router.back() runs and gets bounced right back. Shortcut path (ai-detect-shortcut) close was not testable because the tab-bounce keeps the user stuck on ai-detect. Regression tests for other tabs and re-entry could not be completed for the same reason.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AI Detect close button",
+        "issue": "Tapping X (testID='back-ai') on /ai-detect does not navigate to Home tab. URL remains /ai-detect after tap; AI Issue Detection screen is still rendered. Reproduced 100% via bottom-tab entry.",
+        "testID": "back-ai",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Tab -> AI Detect -> Close",
+        "issue": "Infinite bounce between /(tabs)/ai and /ai-detect. Close (router.back()) pops to (tabs)/ai; AiTab's useFocusEffect immediately re-pushes /ai-detect. User is trapped on AI Detect.",
+        "affected_testIDs": ["back-ai", "ai-detect-shortcut"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_2.json",
+    "/tmp/r1_home.png",
+    "/tmp/r2_ai_open.png",
+    "/tmp/r3_after_close_from_tab.png"
+  ],
+  "action_items": [
+    "Fix /app/frontend/app/(tabs)/ai.tsx: the useFocusEffect(() => router.push('/ai-detect')) creates an infinite bounce with router.back() from ai-detect.tsx. Recommended fix: replace the useFocusEffect approach with a Tabs listener that only fires on user tab-press (not on programmatic focus returns). E.g., in _layout.tsx use <Tabs.Screen name='ai' listeners={{ tabPress: (e) => { e.preventDefault(); router.push('/ai-detect'); } }} /> and remove the ai.tsx focus-push entirely (or make ai.tsx a pure placeholder). This way, tapping the tab pushes /ai-detect, but returning via router.back() does NOT re-trigger the push.",
+    "Alternative fix (less clean): in ai.tsx, guard the push with a ref so it only runs once per fresh mount, OR check current segments and only push if not already on ai-detect (still racy on quick back).",
+    "After fix, retest: (1) open AI Detect via bottom tab -> tap X -> verify URL becomes /(tabs) and Home greeting appears; (2) same via ai-detect-shortcut on Home; (3) tap X mid-analysis (photo picked, no result); (4) regression: switch between Home/Requests/AI Detect/Profile tabs successfully."
+  ],
+  "critical_code_review_comments": [
+    "useFocusEffect for navigation-side-effects is anti-pattern for tab entries — it fires on every focus (including back-navigation focus), causing loops. Prefer a tabPress listener when the goal is 'tapping the tab should open a modal-style screen'.",
+    "router.canGoBack() cannot distinguish a 'safe back' from a 'back that will just bounce forward again'. The fallback to router.replace('/(tabs)') never triggers here because canGoBack is true.",
+    "Consider presenting ai-detect as a modal (Stack.Screen options={{ presentation: 'modal' }}) with its own dismiss, so it is unambiguously outside the tab stack."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only run)", "frontend": "0% (1/1 critical flow failing)"},
+  "seed_data_creation": "Registered one fresh Driver user via UI (email: driver<timestamp>@test.com / driver123, role=user, vehicle=Sedan/KA01AB1234). No cleanup performed.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The current fix in ai-detect.tsx (canGoBack fallback) does NOT solve the bug because the AiTab (ai.tsx) re-pushes /ai-detect via useFocusEffect on every focus. Any solution MUST prevent AiTab from auto-pushing when the user is returning via back navigation. Recommended approach: use Tabs.Screen listeners={{ tabPress }} in (tabs)/_layout.tsx and turn ai.tsx into an inert placeholder. Public preview URL: https://emergency-assist-106.preview.emergentagent.com. Register a Driver via UI, then verify: after tapping AI Detect tab (URL -> /ai-detect), tap X (testID='back-ai'), URL must become /(tabs) with Home 'Hey, <name>' greeting + REQUEST HELP NOW button visible.",
+  "rca_of_issue": "RCA: Tab entry 'ai' (file /app/frontend/app/(tabs)/ai.tsx) uses useFocusEffect to programmatically navigate to /ai-detect. useFocusEffect fires whenever the AiTab route regains focus, including when the user pops back from /ai-detect. Sequence: (1) user on /(tabs)/index (Home); (2) taps 'AI Detect' tab -> route becomes /(tabs)/ai -> useFocusEffect fires -> router.push('/ai-detect'); (3) user taps X -> ai-detect.tsx runs router.back() (canGoBack=true) -> route pops to /(tabs)/ai -> AiTab regains focus -> useFocusEffect fires again -> router.push('/ai-detect'). Net effect: infinite loop; user stays on ai-detect. Repro confirmed: after tapping X, page.url() remained https://emergency-assist-106.preview.emergentagent.com/ai-detect and 'AI Issue Detection' title still visible. Mitigation: move the redirect logic out of a focus-effect and into a tabPress listener on the Tab screen, so it only fires on explicit user tap and not on programmatic focus returns."
+}

@@ -75,7 +75,14 @@ export default function AiDetect() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.back} testID="back-ai">
+        <Pressable
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/(tabs)");
+          }}
+          style={styles.back}
+          testID="back-ai"
+        >
           <Ionicons name="close" size={26} color={colors.onSurface} />
         </Pressable>
         <Text style={styles.title}>AI Issue Detection</Text>
