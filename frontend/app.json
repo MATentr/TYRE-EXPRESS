@@ -1,24 +1,36 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "Tyre Express",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "scheme": "tyreexpress",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emergent.emergencyassist.nmn63o"
+      "bundleIdentifier": "com.emergent.emergencyassist.nmn63o",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Find help nearby when you're stranded",
+        "NSCameraUsageDescription": "Snap the issue for AI diagnosis",
+        "NSPhotoLibraryUsageDescription": "Attach a photo of the problem"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#111315"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.emergent.emergencyassist.nmn63o"
+      "package": "com.emergent.emergencyassist.nmn63o",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "CALL_PHONE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +45,20 @@
           "image": "./assets/images/splash-image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#111315"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Tyre Express needs your location to find nearby mechanics."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Snap a photo of the issue for AI analysis.",
+          "photosPermission": "Attach a photo to your service request."
         }
       ]
     ],
