@@ -1,10 +1,11 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/auth-context";
 import { colors } from "@/src/theme";
 
 export default function TabsLayout() {
   const { user } = useAuth();
+  const router = useRouter();
   const isMechanic = user?.role === "mechanic";
 
   return (
@@ -50,6 +51,12 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="sparkles" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push("/ai-detect");
+          },
         }}
       />
       <Tabs.Screen
