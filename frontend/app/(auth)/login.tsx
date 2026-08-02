@@ -40,7 +40,7 @@ export default function Login() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             <LinearGradient
-              colors={["#FFD600", "#E5C000"]}
+              colors={["#FFFFFF", "#F2F2F7"]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={styles.logo}
             >

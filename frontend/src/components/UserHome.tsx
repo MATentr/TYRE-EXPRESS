@@ -82,10 +82,10 @@ export default function UserHome() {
 
   const mapCenter = loc || DEFAULT_CENTER;
   const markers = [
-    { lat: mapCenter.lat, lng: mapCenter.lng, label: "You", color: "#FFD600", emoji: "📍" },
+    { lat: mapCenter.lat, lng: mapCenter.lng, label: "You", color: "#FFFFFF", emoji: "📍" },
     ...mechanics.map((m: any) => ({
       lat: m.lat, lng: m.lng, label: `${m.garage_name || m.name} · ${m.distance_km}km`,
-      color: "#00E676", emoji: "🔧",
+      color: "#30D158", emoji: "🔧",
     })),
   ];
 

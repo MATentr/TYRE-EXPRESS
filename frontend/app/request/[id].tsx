@@ -43,9 +43,9 @@ export default function RequestDetail() {
     : { name: req.mechanic_name || "No mechanic assigned", phone: req.mechanic_phone, role: req.garage_name || "Mechanic" };
 
   const markers = [
-    { lat: req.lat, lng: req.lng, label: "Pickup", emoji: "🚗", color: "#FFD600" },
+    { lat: req.lat, lng: req.lng, label: "Pickup", emoji: "🚗", color: "#FFFFFF" },
     ...(req.mechanic_lat
-      ? [{ lat: req.mechanic_lat, lng: req.mechanic_lng, label: req.garage_name || "Mechanic", emoji: "🔧", color: "#00E676" }]
+      ? [{ lat: req.mechanic_lat, lng: req.mechanic_lng, label: req.garage_name || "Mechanic", emoji: "🔧", color: "#30D158" }]
       : []),
   ];
 
@@ -121,6 +121,13 @@ export default function RequestDetail() {
             </Pressable>
           ) : null}
         </View>
+
+        {!isMech && req.mechanic_address ? (
+          <View style={styles.addressCard}>
+            <Ionicons name="location" size={16} color={colors.onSurface} />
+            <Text style={styles.addressText}>{req.mechanic_address}</Text>
+          </View>
+        ) : null}
 
         {req.photo_b64 ? (
           <View style={styles.photoNote}>
@@ -241,6 +248,12 @@ const styles = StyleSheet.create({
   },
   photoNote: { flexDirection: "row", gap: 6, alignItems: "center", padding: spacing.sm, backgroundColor: colors.brandTertiary, borderRadius: radius.sm },
   photoText: { color: colors.brand, fontSize: font.size.sm, fontWeight: "600" },
+  addressCard: {
+    flexDirection: "row", gap: spacing.sm, alignItems: "flex-start",
+    backgroundColor: colors.surfaceSecondary, padding: spacing.md, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  addressText: { color: colors.onSurface, flex: 1, fontSize: font.size.sm, lineHeight: 18 },
   desc: { color: colors.onSurface, fontSize: font.size.base },
   bold: { fontWeight: "800", color: colors.brand },
   payBtn: {

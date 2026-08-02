@@ -27,7 +27,7 @@ function AuthGate() {
   }, [user, loading, segments]);
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#111315" } }} />
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#000000" } }} />
   );
 }
 
@@ -41,9 +41,9 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#111315" }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#000000" }}>
       <SafeAreaProvider>
-        <StatusBar barStyle="light-content" backgroundColor="#111315" />
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <AuthProvider>
           <AuthGate />
         </AuthProvider>

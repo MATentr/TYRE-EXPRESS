@@ -50,6 +50,7 @@ class RegisterIn(BaseModel):
     vehicle_type: Optional[str] = None
     vehicle_number: Optional[str] = None
     garage_name: Optional[str] = None
+    address: Optional[str] = None
     services: Optional[List[str]] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
@@ -167,6 +168,7 @@ async def register(data: RegisterIn):
         "vehicle_type": data.vehicle_type,
         "vehicle_number": data.vehicle_number,
         "garage_name": data.garage_name,
+        "address": data.address,
         "services": data.services or [],
         "lat": data.lat,
         "lng": data.lng,
@@ -269,6 +271,7 @@ async def create_request(data: RequestIn, user=Depends(current_user)):
         "mechanic_phone": nearest.get("phone") if nearest else None,
         "mechanic_lat": nearest["lat"] if nearest else None,
         "mechanic_lng": nearest["lng"] if nearest else None,
+        "mechanic_address": nearest.get("address") if nearest else None,
         "garage_name": nearest.get("garage_name") if nearest else None,
         "distance_km": round(best_d, 2) if nearest else None,
         "eta_min": eta_min,
@@ -515,6 +518,7 @@ async def seed():
                 "name": "Ravi Kumar",
                 "email": "ravi@tyreexpress.com",
                 "garage_name": "Ravi's 24x7 Garage",
+                "address": "MG Road, Bengaluru, Karnataka 560001",
                 "phone": "+919876543210",
                 "lat": 12.9716, "lng": 77.5946,  # Bangalore center
                 "services": ["puncture", "engine", "battery"],
@@ -524,6 +528,7 @@ async def seed():
                 "name": "Suresh M",
                 "email": "suresh@tyreexpress.com",
                 "garage_name": "Highway Auto Care",
+                "address": "Old Airport Rd, Domlur, Bengaluru 560071",
                 "phone": "+919876543211",
                 "lat": 12.9756, "lng": 77.6046,
                 "services": ["puncture", "fuel"],
@@ -533,6 +538,7 @@ async def seed():
                 "name": "Anil Sharma",
                 "email": "anil@tyreexpress.com",
                 "garage_name": "Roadside Rescue Pro",
+                "address": "Jayanagar 4th Block, Bengaluru 560011",
                 "phone": "+919876543212",
                 "lat": 12.9616, "lng": 77.5846,
                 "services": ["engine", "battery", "fuel", "puncture", "other"],
@@ -540,7 +546,13 @@ async def seed():
             },
         ]
         for s in samples:
-            if await db.users.find_one({"email": s["email"]}):
+            existing = await db.users.find_one({"email": s["email"]})
+            if existing:
+                # Update address if missing
+                if not existing.get("address"):
+                    await db.users.update_one(
+                        {"email": s["email"]}, {"$set": {"address": s["address"]}}
+                    )
                 continue
             s.update({
                 "id": str(uuid.uuid4()),

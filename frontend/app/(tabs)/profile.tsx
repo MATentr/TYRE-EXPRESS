@@ -36,7 +36,10 @@ export default function Profile() {
         <View style={styles.card}>
           <Row icon="call-outline" label="Phone" value={user.phone || "Not set"} />
           {isMech ? (
-            <Row icon="storefront-outline" label="Garage" value={user.garage_name || "-"} />
+            <>
+              <Row icon="storefront-outline" label="Garage" value={user.garage_name || "-"} />
+              <Row icon="location-outline" label="Address" value={(user as any).address || "Not set"} />
+            </>
           ) : (
             <>
               <Row icon="car-outline" label="Vehicle" value={user.vehicle_type || "-"} />

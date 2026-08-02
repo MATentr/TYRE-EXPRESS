@@ -5,6 +5,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Location from "expo-location";
 
 import { useAuth } from "@/src/auth-context";
 import { colors, spacing, radius, font } from "@/src/theme";
@@ -20,8 +21,41 @@ export default function Register() {
   const [vehicleType, setVehicleType] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [garageName, setGarageName] = useState("");
+  const [address, setAddress] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locErr, setLocErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+
+  const useMyLocation = async () => {
+    setLocErr("");
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocErr("Location permission denied. Enable in settings or type your address manually.");
+        setLocating(false);
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setCoords(point);
+      try {
+        const res = await Location.reverseGeocodeAsync(point);
+        if (res && res[0]) {
+          const a = res[0];
+          const parts = [a.name, a.street, a.district, a.city, a.region, a.postalCode].filter(Boolean);
+          const readable = parts.join(", ");
+          if (readable && !address) setAddress(readable);
+        }
+      } catch {}
+    } catch (e: any) {
+      setLocErr(e?.message || "Could not get location.");
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const submit = async () => {
     setErr("");
@@ -35,8 +69,12 @@ export default function Register() {
         body.vehicle_number = vehicleNumber;
       } else {
         body.garage_name = garageName;
-        // Default location Bangalore for demo
-        body.lat = 12.9716; body.lng = 77.5946;
+        body.address = address;
+        if (coords) {
+          body.lat = coords.lat; body.lng = coords.lng;
+        } else {
+          body.lat = 12.9716; body.lng = 77.5946;
+        }
       }
       await register(body);
       router.replace("/(tabs)");
@@ -44,6 +82,10 @@ export default function Register() {
       setErr(e.message || "Registration failed");
     } finally { setLoading(false); }
   };
+
+  const canSubmit =
+    !!name && !!email && !!password &&
+    (role === "user" ? true : !!garageName && !!address);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -94,9 +136,60 @@ export default function Register() {
                 placeholderTextColor={colors.onSurfaceSecondary} autoCapitalize="characters" style={styles.input} />
             </>
           ) : (
-            <TextInput testID="reg-garage" value={garageName} onChangeText={setGarageName}
-              placeholder="Garage / Business name"
-              placeholderTextColor={colors.onSurfaceSecondary} style={styles.input} />
+            <>
+              <TextInput testID="reg-garage" value={garageName} onChangeText={setGarageName}
+                placeholder="Garage / Business name"
+                placeholderTextColor={colors.onSurfaceSecondary} style={styles.input} />
+
+              <View style={styles.locSection}>
+                <View style={styles.locHead}>
+                  <Ionicons name="location" size={18} color={colors.onSurface} />
+                  <Text style={styles.locTitle}>Garage Location</Text>
+                </View>
+                <Text style={styles.locSub}>
+                  Drivers will find you by address. Set it accurately.
+                </Text>
+
+                <Pressable
+                  testID="use-my-location-btn"
+                  onPress={useMyLocation}
+                  disabled={locating}
+                  style={[styles.locBtn, locating && { opacity: 0.6 }]}
+                >
+                  {locating ? (
+                    <ActivityIndicator color={colors.onSurface} />
+                  ) : (
+                    <>
+                      <Ionicons name="navigate" size={18} color={colors.onSurface} />
+                      <Text style={styles.locBtnText}>
+                        {coords ? "Update to current location" : "Use my current location"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+
+                {coords && (
+                  <View style={styles.coordsPill} testID="coords-pill">
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                    <Text style={styles.coordsText}>
+                      Pinned: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+                    </Text>
+                  </View>
+                )}
+
+                {locErr ? <Text style={styles.locErr}>{locErr}</Text> : null}
+
+                <TextInput
+                  testID="reg-address"
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Street address, area, city, PIN"
+                  placeholderTextColor={colors.onSurfaceSecondary}
+                  multiline
+                  style={[styles.input, styles.addressInput]}
+                />
+              </View>
+            </>
           )}
 
           {err ? <Text style={styles.err}>{err}</Text> : null}
@@ -104,10 +197,10 @@ export default function Register() {
           <Pressable
             testID="register-submit-button"
             onPress={submit}
-            disabled={loading || !name || !email || !password}
+            disabled={loading || !canSubmit}
             style={({ pressed }) => [
               styles.cta,
-              (loading || !name || !email || !password) && { opacity: 0.5 },
+              (loading || !canSubmit) && { opacity: 0.5 },
               pressed && { transform: [{ scale: 0.98 }] },
             ]}
           >
@@ -146,6 +239,32 @@ const styles = StyleSheet.create({
     color: colors.onSurface, fontSize: font.size.lg, marginBottom: spacing.md,
     borderWidth: 1, borderColor: colors.border,
   },
+  addressInput: { minHeight: 72, textAlignVertical: "top", paddingTop: spacing.md },
+  locSection: {
+    padding: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  locHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+  locTitle: { color: colors.onSurface, fontWeight: "800", fontSize: font.size.base, letterSpacing: 0.5 },
+  locSub: { color: colors.onSurfaceSecondary, fontSize: font.size.sm },
+  locBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+    backgroundColor: colors.surfaceTertiary, borderRadius: radius.md,
+    paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.borderStrong,
+  },
+  locBtnText: { color: colors.onSurface, fontWeight: "700" },
+  coordsPill: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: colors.surfaceTertiary, borderRadius: radius.pill,
+    paddingHorizontal: spacing.md, paddingVertical: 6, alignSelf: "flex-start",
+    borderWidth: 1, borderColor: colors.success,
+  },
+  coordsText: { color: colors.onSurface, fontSize: font.size.xs, fontWeight: "600" },
+  locErr: { color: colors.error, fontSize: font.size.sm },
   err: { color: colors.error, marginBottom: spacing.md },
   cta: { backgroundColor: colors.brandPrimary, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", marginTop: spacing.sm },
   ctaText: { color: colors.onBrand, fontSize: font.size.lg, fontWeight: "900", letterSpacing: 1 },

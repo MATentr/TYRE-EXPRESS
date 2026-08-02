@@ -6,8 +6,8 @@ export default function Index() {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#111315", alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color="#FFD600" size="large" />
+      <View style={{ flex: 1, backgroundColor: "#000000", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color="#FFFFFF" size="large" />
       </View>
     );
   }
