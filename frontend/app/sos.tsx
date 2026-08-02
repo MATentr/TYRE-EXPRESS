@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, TextInput, ScrollView, ActivityIndicator, Linking,
+  View, Text, StyleSheet, Pressable, TextInput, ScrollView, ActivityIndicator, Linking, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import * as SMS from "expo-sms";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
 import { colors, spacing, radius, font } from "@/src/theme";
+import { useAuth } from "@/src/auth-context";
 
 export default function Sos() {
   const router = useRouter();
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<any>(null);
+  const [deliveryNote, setDeliveryNote] = useState<string>("");
 
   const load = async () => {
     try { const list = await api.getSosContacts(); setContacts(list); } catch {}
@@ -37,16 +41,69 @@ export default function Sos() {
 
   const sendSos = async () => {
     setSending(true);
+    setDeliveryNote("");
     try {
       let lat = 12.9716, lng = 77.5946;
       const perm = await Location.getForegroundPermissionsAsync();
       if (perm.granted) {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         lat = pos.coords.latitude; lng = pos.coords.longitude;
+      } else {
+        const req = await Location.requestForegroundPermissionsAsync();
+        if (req.granted) {
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          lat = pos.coords.latitude; lng = pos.coords.longitude;
+        }
       }
+
+      // Log alert to backend (returns map link)
       const r = await api.sosAlert(lat, lng);
       setSent(r);
-    } catch {} finally { setSending(false); }
+
+      const numbers = contacts.map((c) => c.phone).filter(Boolean);
+      if (numbers.length === 0) {
+        setDeliveryNote("No contacts to notify.");
+        return;
+      }
+
+      const who = user?.name || "I";
+      const body = `🚨 SOS from ${who}. I need help. My live location: ${r.map_link}`;
+
+      // Try native SMS composer first (works on iOS/Android real devices)
+      const available = await SMS.isAvailableAsync().catch(() => false);
+      if (available) {
+        const res = await SMS.sendSMSAsync(numbers, body);
+        if (res.result === "sent") {
+          setDeliveryNote(`SMS sent to ${numbers.length} contact(s).`);
+        } else if (res.result === "cancelled") {
+          setDeliveryNote("SMS composer cancelled. Tap SEND SOS again to retry.");
+        } else {
+          setDeliveryNote("SMS composer closed without sending.");
+        }
+        return;
+      }
+
+      // Fallback: open the device SMS URI (works on iOS/Android outside Expo Go for web)
+      const joined = numbers.join(",");
+      const smsUrl = Platform.select({
+        ios: `sms:${joined}&body=${encodeURIComponent(body)}`,
+        android: `sms:${joined}?body=${encodeURIComponent(body)}`,
+        default: `sms:${joined}?body=${encodeURIComponent(body)}`,
+      })!;
+      const can = await Linking.canOpenURL(smsUrl).catch(() => false);
+      if (can) {
+        await Linking.openURL(smsUrl);
+        setDeliveryNote(`Opening SMS app for ${numbers.length} contact(s).`);
+      } else {
+        setDeliveryNote(
+          "SMS not available on this device/preview. Open the app on a real phone to send. Location link is copied to the alert card below."
+        );
+      }
+    } catch (e: any) {
+      setDeliveryNote(e?.message || "Failed to send SOS. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -85,14 +142,21 @@ export default function Sos() {
           <View style={styles.sentCard}>
             <Ionicons name="checkmark-circle" size={22} color={colors.success} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.sentTitle}>Alert sent</Text>
-              <Text style={styles.sentSub}>To {sent.sent_to.length} contact(s)</Text>
-              <Pressable onPress={() => Linking.openURL(sent.map_link)}>
+              <Text style={styles.sentTitle}>Alert logged</Text>
+              <Text style={styles.sentSub}>Location saved for {sent.sent_to.length} contact(s)</Text>
+              <Pressable onPress={() => Linking.openURL(sent.map_link)} testID="sos-open-map">
                 <Text style={styles.sentLink}>Open location on map ↗</Text>
               </Pressable>
             </View>
           </View>
         )}
+
+        {deliveryNote ? (
+          <View style={styles.deliveryCard} testID="sos-delivery-note">
+            <Ionicons name="send" size={16} color={colors.brand} />
+            <Text style={styles.deliveryText}>{deliveryNote}</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.section}>Emergency Contacts</Text>
 
@@ -156,6 +220,12 @@ const styles = StyleSheet.create({
   sentTitle: { color: colors.success, fontWeight: "800" },
   sentSub: { color: colors.onSurface, marginTop: 2 },
   sentLink: { color: colors.brand, marginTop: 4, fontWeight: "700" },
+  deliveryCard: {
+    flexDirection: "row", gap: spacing.sm, alignItems: "center",
+    padding: spacing.md, backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.borderStrong,
+  },
+  deliveryText: { color: colors.onSurface, flex: 1, fontSize: font.size.sm },
   section: { color: colors.onSurface, fontSize: font.size.lg, fontWeight: "800", marginTop: spacing.md },
   emptyText: { color: colors.onSurfaceSecondary },
   contactRow: {
