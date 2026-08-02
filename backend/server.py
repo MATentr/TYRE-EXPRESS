@@ -313,6 +313,8 @@ async def update_request(rid: str, upd: RequestUpdateIn, user=Depends(current_us
     doc = await db.requests.find_one({"id": rid})
     if not doc:
         raise HTTPException(404, "Not found")
+    if user["id"] not in (doc.get("user_id"), doc.get("assigned_mechanic_id")):
+        raise HTTPException(403, "Not authorized")
     await db.requests.update_one(
         {"id": rid},
         {"$set": {"status": upd.status, "updated_at": datetime.now(timezone.utc).isoformat()}},
@@ -326,6 +328,12 @@ async def review_request(rid: str, r: ReviewIn, user=Depends(current_user)):
     doc = await db.requests.find_one({"id": rid})
     if not doc:
         raise HTTPException(404, "Not found")
+    if doc.get("user_id") != user["id"]:
+        raise HTTPException(403, "Only the requester can review")
+    if doc.get("status") != "completed":
+        raise HTTPException(400, "Can only review completed requests")
+    if doc.get("rating") is not None:
+        raise HTTPException(400, "Already reviewed")
     await db.requests.update_one(
         {"id": rid},
         {"$set": {"rating": r.rating, "review": r.comment or ""}},
@@ -445,6 +453,14 @@ async def create_payment_intent(data: PaymentIntentIn, user=Depends(current_user
         return {"method": "upi", "status": "paid", "upi_link": f"upi://pay?pa=tyreexpress@upi&am={data.amount_cents/100}"}
 
     try:
+        # If Stripe key is placeholder/invalid, fall back to mock intent
+        if not stripe.api_key or "emergent" in stripe.api_key or not stripe.api_key.startswith("sk_"):
+            fake_id = f"pi_mock_{uuid.uuid4().hex[:16]}"
+            await db.requests.update_one(
+                {"id": data.request_id},
+                {"$set": {"payment_intent_id": fake_id, "payment_method": "card"}},
+            )
+            return {"client_secret": f"{fake_id}_secret_mock", "payment_intent_id": fake_id, "mock": True}
         intent = stripe.PaymentIntent.create(
             amount=data.amount_cents,
             currency="inr",
