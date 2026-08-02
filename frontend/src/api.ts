@@ -59,6 +59,9 @@ export const api = {
   reviewRequest: (id: string, rating: number, comment?: string) =>
     request(`/requests/${id}/review`, { method: 'POST', body: JSON.stringify({ rating, comment }) }),
 
+  setQuote: (id: string, estimated_cost: number) =>
+    request(`/requests/${id}/quote`, { method: 'PATCH', body: JSON.stringify({ estimated_cost }) }),
+
   getSosContacts: () => request('/sos/contacts'),
   addSosContact: (name: string, phone: string) =>
     request('/sos/contacts', { method: 'POST', body: JSON.stringify({ name, phone }) }),

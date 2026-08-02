@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking,
+  View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking, TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
@@ -18,6 +18,8 @@ export default function RequestDetail() {
   const [req, setReq] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
+  const [quoteInput, setQuoteInput] = useState("");
+  const [savingQuote, setSavingQuote] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -103,6 +105,9 @@ export default function RequestDetail() {
           <View style={styles.metric}>
             <Text style={styles.metricLabel}>Est. Cost</Text>
             <Text style={styles.metricValue}>₹{req.estimated_cost}</Text>
+            {!req.quote_set_by_mechanic && (
+              <Text style={styles.metricHint}>Awaiting quote</Text>
+            )}
           </View>
         </View>
 
@@ -177,6 +182,52 @@ export default function RequestDetail() {
 
         {isMech && ["pending", "accepted", "en_route", "arrived"].includes(req.status) && (
           <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            {/* Mechanic quote input */}
+            <View style={styles.quoteBox} testID="quote-box">
+              <View style={styles.quoteHead}>
+                <Ionicons name="pricetag" size={18} color={colors.onSurface} />
+                <Text style={styles.quoteTitle}>Set Estimated Amount</Text>
+              </View>
+              <Text style={styles.quoteSub}>
+                {req.quote_set_by_mechanic
+                  ? `Your current quote: ₹${req.estimated_cost}`
+                  : `Default suggestion: ₹${req.estimated_cost}. Update if needed.`}
+              </Text>
+              <View style={styles.quoteRow}>
+                <Text style={styles.rupee}>₹</Text>
+                <TextInput
+                  testID="quote-input"
+                  value={quoteInput}
+                  onChangeText={(t) => setQuoteInput(t.replace(/[^0-9.]/g, ""))}
+                  placeholder={String(req.estimated_cost ?? "")}
+                  placeholderTextColor={colors.onSurfaceSecondary}
+                  keyboardType="numeric"
+                  style={styles.quoteInput}
+                />
+                <Pressable
+                  testID="save-quote-btn"
+                  disabled={!quoteInput || savingQuote}
+                  onPress={async () => {
+                    const val = parseFloat(quoteInput);
+                    if (isNaN(val) || val < 0) return;
+                    setSavingQuote(true);
+                    try {
+                      await api.setQuote(req.id, val);
+                      setQuoteInput("");
+                      await load();
+                    } finally { setSavingQuote(false); }
+                  }}
+                  style={[styles.saveQuoteBtn, (!quoteInput || savingQuote) && { opacity: 0.5 }]}
+                >
+                  {savingQuote ? (
+                    <ActivityIndicator color={colors.onBrand} />
+                  ) : (
+                    <Text style={styles.saveQuoteText}>SAVE</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+
             {req.status === "pending" && (
               <Pressable
                 testID="mech-accept-btn"
@@ -231,6 +282,7 @@ const styles = StyleSheet.create({
   metricLabel: { color: colors.onSurfaceSecondary, fontSize: font.size.xs, fontWeight: "700", textTransform: "uppercase" },
   metricValue: { color: colors.onSurface, fontSize: font.size.xxl, fontWeight: "900", marginTop: 2 },
   metricUnit: { fontSize: font.size.sm, color: colors.onSurfaceSecondary },
+  metricHint: { color: colors.onSurfaceSecondary, fontSize: 10, marginTop: 2 },
   personCard: {
     flexDirection: "row", alignItems: "center", gap: spacing.md,
     backgroundColor: colors.surfaceSecondary, padding: spacing.md, borderRadius: radius.md,
@@ -269,4 +321,23 @@ const styles = StyleSheet.create({
   stars: { flexDirection: "row", gap: spacing.sm },
   reviewBtn: { backgroundColor: colors.brand, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.md },
   reviewBtnText: { color: colors.onBrand, fontWeight: "900", letterSpacing: 0.5 },
+  quoteBox: {
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md,
+    padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: spacing.sm,
+  },
+  quoteHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+  quoteTitle: { color: colors.onSurface, fontWeight: "800", fontSize: font.size.base, letterSpacing: 0.5 },
+  quoteSub: { color: colors.onSurfaceSecondary, fontSize: font.size.sm },
+  quoteRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  rupee: { color: colors.onSurface, fontSize: font.size.xxl, fontWeight: "900" },
+  quoteInput: {
+    flex: 1, backgroundColor: colors.surfaceTertiary, color: colors.onSurface,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderRadius: radius.md,
+    fontSize: font.size.lg, borderWidth: 1, borderColor: colors.border,
+  },
+  saveQuoteBtn: {
+    backgroundColor: colors.brand, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    borderRadius: radius.md, minWidth: 84, alignItems: "center",
+  },
+  saveQuoteText: { color: colors.onBrand, fontWeight: "900", letterSpacing: 0.5 },
 });

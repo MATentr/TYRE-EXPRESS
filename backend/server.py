@@ -88,6 +88,10 @@ class ReviewIn(BaseModel):
     comment: Optional[str] = None
 
 
+class QuoteIn(BaseModel):
+    estimated_cost: float
+
+
 class AiAnalyzeIn(BaseModel):
     image_b64: str
 
@@ -324,6 +328,26 @@ async def update_request(rid: str, upd: RequestUpdateIn, user=Depends(current_us
     )
     updated = await db.requests.find_one({"id": rid}, {"_id": 0})
     return updated
+
+
+@api.patch("/requests/{rid}/quote")
+async def set_quote(rid: str, q: QuoteIn, user=Depends(current_user)):
+    doc = await db.requests.find_one({"id": rid})
+    if not doc:
+        raise HTTPException(404, "Not found")
+    if doc.get("assigned_mechanic_id") != user["id"]:
+        raise HTTPException(403, "Only the assigned mechanic can set the quote")
+    if q.estimated_cost < 0:
+        raise HTTPException(400, "Amount must be positive")
+    await db.requests.update_one(
+        {"id": rid},
+        {"$set": {
+            "estimated_cost": q.estimated_cost,
+            "quote_set_by_mechanic": True,
+            "quote_updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+    return await db.requests.find_one({"id": rid}, {"_id": 0})
 
 
 @api.post("/requests/{rid}/review")
